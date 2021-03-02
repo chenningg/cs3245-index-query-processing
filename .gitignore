@@ -3,6 +3,7 @@
 
 # Data
 nltk_data/
+disk/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

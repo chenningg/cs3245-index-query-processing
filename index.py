@@ -4,6 +4,8 @@ import nltk
 import sys
 import getopt
 import os
+import pickle
+import shutil
 
 ps = nltk.stem.PorterStemmer()
 
@@ -16,6 +18,31 @@ def usage():
     )
 
 
+# Resets the disk folder
+def reset_disk():
+    dir_name = os.path.join(os.path.dirname(__file__), "disk")
+    if os.path.exists(dir_name):
+        shutil.rmtree(dir_name)
+    os.mkdir(dir_name)
+
+
+def write_term_postings_dict_to_disk(term_postings_dict, block_num):
+    # Get disk directory to write to
+    dir_name = os.path.join(os.path.dirname(__file__), "disk")
+
+    # Write full block from main memory to disk
+    file_name = os.path.join(dir_name, "block_{}".format(block_num))
+    with open(file_name, "wb") as outfile:  # Serialize block's dictionary to disk
+        # Sort the postings lists according to the term lexicographically, and the postings list in numerical ascending order
+        for term in sorted(term_postings_dict.keys()):
+            postings_list = sorted(term_postings_dict[term])
+            term_postings = [term, postings_list]
+            pickle.dump(
+                term_postings, outfile
+            )  # Store each <term, postings list> to the disk block
+        outfile.close()
+
+
 def build_index(in_dir, out_dict, out_postings):
     """
     build index from documents stored in the input directory,
@@ -25,51 +52,122 @@ def build_index(in_dir, out_dict, out_postings):
     # This is an empty method
     # Pls implement your code in below
 
-    # We'll be implementing BSBI.
+    # Define constants (in bytes)
+    BLOCK_SIZE = 5000000  # Size of a block (main memory)
+    CHUNK_SIZE = 500000  # Size of a chunk that we load from each block to merge
 
-    dictionary = (
+    # Reset disk
+    reset_disk()
+
+    # Define variables
+    term_postings_dict = (
         {}
-    )  # holding variable of format dictionary = {'term': {"docFreq": i, "termID": j, "postingListPointer": k}, ... }
-    postingLists = []  # holding variable of format postingList = [ list1, list2, ... ]
-    termID = 0  # running integer for termID assignment, starting from zero
-    docIDs = os.listdir(in_dir)  # read in paths of all documents in the in_dir
+    )  # The current dictionary <term, [posting_list]> for each of the blocks
+    block_num = (
+        1  # Block number to write out intermediate blocks to disk (block file name)
+    )
+    size_used = 0
 
-    # subset of paths for testing purposes
-    docIDs = docIDs[:10]
+    # Read in documents to index
+    docIDs = os.listdir(in_dir)  # Read in paths of all documents in the in_dir
 
-    # process every document
+    # Subset of paths for testing purposes
+    docIDs = docIDs[:2500]
+
+    # Process every document and create a dictionary of posting lists
     for docID in docIDs:
-        f = open(os.path.join(in_dir, docID), "r")  # open the document file
-        text = f.read()  # read the document in fulltext
-        text = text.lower()  # convert text to lower case
-        sentences = nltk.sent_tokenize(text)  # tokenize by sentence
+        f = open(os.path.join(in_dir, docID), "r")  # Open the document file
+        text = f.read()  # Read the document in fulltext
+        text = text.lower()  # Convert text to lower case
+        sentences = nltk.sent_tokenize(text)  # Tokenize by sentence
+
         for sentence in sentences:
-            words = nltk.word_tokenize(sentence)  # tokenize by word
-            words_stemmed = [ps.stem(w) for w in words]  # stem every word
+            words = nltk.word_tokenize(sentence)  # Tokenize by word
+            words_stemmed = [ps.stem(w) for w in words]  # Stem every word
+
             for word in words_stemmed:
-                if word not in dictionary:  # new word/term, add to dictionary
-                    dictionary[word] = {
-                        "docFreq": 1,
-                        "termID": termID,
-                        "postingListPointer": termID,
-                    }  # postingListPointer same as termID for now
-                    postingLists.append([docID])
-                    termID += 1
-                else:  # word is in dictionary
-                    if (
-                        docID
-                        not in postingLists[dictionary[word]["postingListPointer"]]
-                    ):  # check if docID already in the corresponding postingList
-                        postingLists[dictionary[word]["postingListPointer"]].append(
-                            docID
-                        )  # append docID to end of corresponding postingList if not exists
-                        dictionary[word]["docFreq"] += 1
+                # Before we add anything to the dictionary, we need to check that it will not exceed main memory
+                # CASE 1: Check if word doesn't exist in dictionary
+                if word not in term_postings_dict:
+                    word_posting_size = sys.getsizeof(word) + sys.getsizeof(docID)
 
-    print(dictionary)
-    print(termID)
-    print(postingLists)
-    print(dictionary["and"])
+                    # Check that if we add this new term in, we won't exceed the block's memory size
+                    # If exceed, we need to write block to disk (temporary postings file) and clear the memory
+                    if word_posting_size + size_used > BLOCK_SIZE:
+                        write_term_postings_dict_to_disk(
+                            term_postings_dict, block_num
+                        )  # Write block's dictionary to disk
+                        block_num += (
+                            1  # Increase block number that we have stored in disk
+                        )
+                        size_used = 0  # Reset size used in main memory
+                        term_postings_dict.clear()  # Clear the in memory dictionary for the next block
 
+                    # Add new term into block's dictionary
+                    term_postings_dict[word] = [docID]
+                    size_used += word_posting_size  # Increase size used in main memory
+
+                # CASE 2: If word is inside dictionary
+                else:
+                    # If docID is not inside the postings list, need to check if we have memory to add to postings list
+                    # If docID is already inside the postings list for this term, don't need to do anything
+                    if docID not in term_postings_dict[word]:
+                        # If exceed, we need to write block to disk (temporary postings file) and clear the memory
+                        docID_size = sys.getsizeof(docID)
+
+                        if docID_size + size_used > BLOCK_SIZE:
+                            write_term_postings_dict_to_disk(
+                                term_postings_dict, block_num
+                            )  # Write block's dictionary to disk
+                            block_num += (
+                                1  # Increase block number that we have stored in disk
+                            )
+                            size_used = 0  # Reset size used in main memory
+                            term_postings_dict.clear()  # Clear the in memory dictionary for the next block
+
+                            # We need to add the the term to the cleared dictionary
+                            term_postings_dict[word] = [docID]
+                            size_used += (
+                                sys.getsizeof(word) + docID_size
+                            )  # Increase size of main memory used
+                        else:
+                            # The dictionary is still in main memory and we can just append the new docID to the postings list
+                            term_postings_dict[word].append(docID)
+                            size_used += docID_size  # Increase size of main memory used
+
+        # Close the file
+        f.close()
+
+    # Write out the last block in main memory to the disk
+    write_term_postings_dict_to_disk(
+        term_postings_dict, block_num
+    )  # Write block's dictionary to disk
+    block_num += 1  # Increase block number that we have stored in disk
+    size_used = 0  # Reset size used in main memory
+    term_postings_dict.clear()  # Clear the in memory dictionary for the next block
+
+    # Now we need to load each block chunk by chunk and do a single pass merge
+
+    # if word not in dictionary:  # new word/term, add to dictionary
+    #     dictionary[word] = {
+    #         "docFreq": 1,
+    #         "termID": termID,
+    #         "postingListPointer": termID,
+    #     }  # postingListPointer same as termID for now
+    #     postingLists.append([docID])
+    #     termID += 1
+    # else:  # word is in dictionary
+    #     if (
+    #         docID
+    #         not in postingLists[dictionary[word]["postingListPointer"]]
+    #     ):  # check if docID already in the corresponding postingList
+    #         postingLists[dictionary[word]["postingListPointer"]].append(
+    #             docID
+    #         )  # append docID to end of corresponding postingList if not exists
+    #         dictionary[word]["docFreq"] += 1
+
+
+# Main
 
 input_directory = output_file_dictionary = output_file_postings = None
 
