@@ -54,7 +54,6 @@ def build_index(in_dir, out_dict, out_postings):
 
     # Define constants (in bytes)
     BLOCK_SIZE = 5000000  # Size of a block (main memory)
-    CHUNK_SIZE = 500000  # Size of a chunk that we load from each block to merge
 
     # Reset disk
     reset_disk()
@@ -142,11 +141,44 @@ def build_index(in_dir, out_dict, out_postings):
     write_term_postings_dict_to_disk(
         term_postings_dict, block_num
     )  # Write block's dictionary to disk
-    block_num += 1  # Increase block number that we have stored in disk
     size_used = 0  # Reset size used in main memory
     term_postings_dict.clear()  # Clear the in memory dictionary for the next block
 
     # Now we need to load each block chunk by chunk and do a single pass merge
+    chunk_size = (
+        BLOCK_SIZE // block_num
+    )  # Get estimated chunk size to load in from each block
+
+    # Get disk directory to load in blocks
+    disk_files = os.listdir(
+        os.path.join(os.path.dirname(__file__), "disk")
+    )  # Read in all documents in the disk
+
+    # Process every file and deserialize them chunk by chunk
+    blocks = []
+
+    for disk_file in disk_files:
+        f = open(
+            os.path.join(os.path.dirname(__file__), "disk", block), "rb"
+        )  # Open the block file
+
+        # Maintain a reference to each opened block file so we can read chunks from all of them simultaneously
+        disk_files.append(f)
+
+        # Load in fi
+
+    # Create main memory structure to compare and merge chunks from each block
+    main_memory_chunks = []
+
+    # Load in chunk by chunk for every block
+    for block in blocks:
+        while True:  # Load in terms in that block until no more terms
+            try:
+                deserialized_file = pickle.load(block)
+                print(deserialized_file)
+            except:
+                break
+        f.close()
 
     # if word not in dictionary:  # new word/term, add to dictionary
     #     dictionary[word] = {
