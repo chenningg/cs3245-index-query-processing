@@ -41,7 +41,7 @@ We suggest that we should be graded as follows:
 <Please list any websites and/or people you consulted with for this
 assignment and state their role>
 
-Partner: <Chen Ning's Matric> 
+Partner: A0230521Y
 
 Tokenizing - https://pythonspot.com/tokenizing-words-and-sentences-with-nltk/
 Stemming - https://www.geeksforgeeks.org/python-stemming-words-with-nltk/
