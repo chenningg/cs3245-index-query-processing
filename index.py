@@ -61,7 +61,9 @@ def build_index(in_dir, out_dict, out_postings):
     # Define variables
     term_postings_dict = {}
     # The current dictionary <term, [posting_list]> for each of the blocks
-    block_num = 1  # Block number to write out intermediate blocks to disk (block file name)
+    block_num = (
+        1  # Block number to write out intermediate blocks to disk (block file name)
+    )
     size_used = 0
 
     # Read in documents to index
@@ -90,8 +92,12 @@ def build_index(in_dir, out_dict, out_postings):
                     # Check that if we add this new term in, we won't exceed the block's memory size
                     # If exceed, we need to write block to disk (temporary postings file) and clear the memory
                     if word_posting_size + size_used > BLOCK_SIZE:
-                        write_term_postings_dict_to_disk(term_postings_dict, block_num)  # Write block's dictionary to disk
-                        block_num += 1  # Increase block number that we have stored in disk
+                        write_term_postings_dict_to_disk(
+                            term_postings_dict, block_num
+                        )  # Write block's dictionary to disk
+                        block_num += (
+                            1  # Increase block number that we have stored in disk
+                        )
                         size_used = 0  # Reset size used in main memory
                         term_postings_dict.clear()  # Clear the in memory dictionary for the next block
 
@@ -108,14 +114,20 @@ def build_index(in_dir, out_dict, out_postings):
                         docID_size = sys.getsizeof(docID)
 
                         if docID_size + size_used > BLOCK_SIZE:
-                            write_term_postings_dict_to_disk(term_postings_dict, block_num)  # Write block's dictionary to disk
-                            block_num += 1  # Increase block number that we have stored in disk
+                            write_term_postings_dict_to_disk(
+                                term_postings_dict, block_num
+                            )  # Write block's dictionary to disk
+                            block_num += (
+                                1  # Increase block number that we have stored in disk
+                            )
                             size_used = 0  # Reset size used in main memory
                             term_postings_dict.clear()  # Clear the in memory dictionary for the next block
 
                             # We need to add the the term to the cleared dictionary
                             term_postings_dict[word] = [docID]
-                            size_used += (sys.getsizeof(word) + docID_size)  # Increase size of main memory used
+                            size_used += (
+                                sys.getsizeof(word) + docID_size
+                            )  # Increase size of main memory used
                         else:
                             # The dictionary is still in main memory and we can just append the new docID to the postings list
                             term_postings_dict[word].append(docID)
@@ -125,12 +137,16 @@ def build_index(in_dir, out_dict, out_postings):
         f.close()
 
     # Write out the last block in main memory to the disk
-    write_term_postings_dict_to_disk(term_postings_dict, block_num)  # Write block's dictionary to disk
+    write_term_postings_dict_to_disk(
+        term_postings_dict, block_num
+    )  # Write block's dictionary to disk
     size_used = 0  # Reset size used in main memory
     term_postings_dict.clear()  # Clear the in memory dictionary for the next block
 
     # Now we need to load each block chunk by chunk and do a single pass merge
-    chunk_size = BLOCK_SIZE // (block_num + 1)  # Get estimated chunk size to load in from each block
+    chunk_size = BLOCK_SIZE // (
+        block_num + 1
+    )  # Get estimated chunk size to load in from each block
 
     # Get disk directory to load in blocks
     disk_files = os.listdir(
@@ -139,28 +155,51 @@ def build_index(in_dir, out_dict, out_postings):
 
     # Process every file and deserialize them chunk by chunk
     open_disk_files = []
-    chunks = []
+    chunks = [[] for i in range(len(disk_files))]
 
     for disk_file in disk_files:
-        f = open(os.path.join(os.path.dirname(__file__), "disk", disk_file), "rb")  # Open the block file
+        f = open(
+            os.path.join(os.path.dirname(__file__), "disk", disk_file), "rb"
+        )  # Open the block file
 
         # Maintain a reference to each opened block file so we can read chunks from all of them simultaneously
         open_disk_files.append(f)
 
     # Load in the initial chunk of data that we will be working with from each block
-    for open_disk_file in open_disk_files:
+    def load_chunk(disk_file_ID):
         chunk_size_read = 0
-        file_chunks = []
+        file_chunk = []  # This particular chunk of data from a block
 
         while chunk_size_read < chunk_size:
-            try:
-                deserialized_object = pickle.load(f)
-                file_chunks.append(deserialized_object)
+            try:  # Read in line by line until chunk size in main memory is filled up
+                deserialized_object = pickle.load(open_disk_files[disk_file_ID])
+                file_chunk.append(deserialized_object)
                 chunk_size_read += sys.getsizeof(deserialized_object)
             except:
-                break
-        chunks.append(file_chunks)
-    
+                break  # Nothing more to read
+
+        chunks[disk_file_ID] = file_chunk
+        # If there is data in the chunk return true, else return false
+        if len(file_chunk) > 0:
+            return True
+        else:
+            return False
+
+    # Load in initial chunk from each of the disk blocks
+    for disk_file_ID in range(len(open_disk_files)):
+        load_chunk(disk_file_ID)
+
+        # chunk_size_read = 0
+        # file_chunks = []
+
+        # while chunk_size_read < chunk_size:
+        #     try:
+        #         deserialized_object = pickle.load(f)
+        #         file_chunks.append(deserialized_object)
+        #         chunk_size_read += sys.getsizeof(deserialized_object)
+        #     except:
+        #         break
+        # chunks.append(file_chunks)
 
     # This is the chunk that we will use as an in-memory holding variable
     # When full, will trigger the writing to dictionary.txt and postings.txt
@@ -172,11 +211,19 @@ def build_index(in_dir, out_dict, out_postings):
     word_to_merge = ""
     chunk_ids_to_merge = []
 
-    # Merge process across all the chunks. Load in more data from specific chunk if it runs out 
+    # Merge process across all the chunks. Load in more data from specific chunk if it runs out
     while any(chunks):
-        # merge the heads where possible 
+        # merge the heads where possible
         # chunk format --- ['zero', ['14313', '14483', '1560', '1640']]
         for chunkID, chunk in enumerate(chunks):
+            # Load in data from chunk if it's empty and still has data
+            if len(chunk) == 0:
+                chunk_still_has_data = load_chunk(chunkID)  # Load in data into chunk
+                if not chunk_still_has_data:  # If no more data just skip this chunk
+                    continue
+
+            # If we reach here, chunk has data and we need to merge and compare
+            chunk = chunks[chunkID]
             if len(chunk) != 0:
                 if word_to_merge == "":
                     word_to_merge = chunk[0]
@@ -189,19 +236,20 @@ def build_index(in_dir, out_dict, out_postings):
                         chunk_ids_to_merge.clear()
                         chunk_ids_to_merge.append(chunkID)
 
-        # obtain the postingListToMerge 
+        # obtain the postingListToMerge
         posting_list_to_merge = []
         for chunkID in chunk_ids_to_merge:
-            # get the head and remove from the existing array 
+            # get the head and remove from the existing array
             posting_list_to_merge += chunks[chunkID].pop(0)
-        
+
         posting_list_to_merge = list(set(posting_list_to_merge))
         posting_list_to_merge.sort()
 
-        
         # output to holding dictionary and posting list
-        writeout_memory = sys.getsizeof(word_to_merge) + sys.getsizeof(posting_list_to_merge[0])*len(posting_list_to_merge)
-        
+        writeout_memory = sys.getsizeof(word_to_merge) + sys.getsizeof(
+            posting_list_to_merge[0]
+        ) * len(posting_list_to_merge)
+
         if writeout_memory + writeout_memory_used > chunk_size:
             # write out to dictionary.txt and postings.txt
             write_to_disk()
@@ -215,22 +263,6 @@ def build_index(in_dir, out_dict, out_postings):
             writeout_chunk[word_to_merge] = {"doc_freq": len(posting_list_to_merge)}
             make_skip_pointer(posting_list_to_merge)
             writeout_chunk[word_to_merge]["posting_list"] = pointerToPostingList
-
-
-
-            
-        
-
-
-
-
-        
-
-
-
-
-
-
 
     # if word not in dictionary:  # new word/term, add to dictionary
     #     dictionary[word] = {
