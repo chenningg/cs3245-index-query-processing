@@ -4,8 +4,8 @@ import nltk
 import sys
 import getopt
 import os
+import glob
 import pickle
-import shutil
 import math
 
 ps = nltk.stem.PorterStemmer()
@@ -21,11 +21,13 @@ def usage():
 # Resets the disk folder. Wipes out the intermediate files
 def reset_disk(out_dict, out_postings):
     dir_name = os.path.join(os.path.dirname(__file__), "disk")
-    if os.path.exists(dir_name):
-        shutil.rmtree(dir_name)
     
     if not os.path.exists(dir_name):
         os.mkdir(dir_name)
+
+    for f in os.listdir(dir_name):
+        file_path = os.path.join(dir_name, f)
+        os.remove(file_path)
 
     out_dict_file = os.path.join(os.path.dirname(__file__), out_dict)
     out_postings_file = os.path.join(os.path.dirname(__file__), out_postings)
@@ -163,6 +165,7 @@ def add_skip_pointers(posting_list_to_merge):
 
     return posting_list_to_merge
 
+
 # Used to build up the dictionary.txt and postings.txt
 def write_to_disk(writeout_chunk, out_dict, out_postings):
     # open our dictionary and postings file
@@ -207,31 +210,13 @@ def write_to_disk(writeout_chunk, out_dict, out_postings):
     f_postings.close()
 
 
-# Main function
-def build_index(in_dir, out_dict, out_postings):
-    """
-    build index from documents stored in the input directory,
-    then output the dictionary file and postings file
-    """
-    print("indexing...\n")
-    # This is an empty method
-    # Pls implement your code in below
-
+# SPIMI algorithm
+def spimi(CHUNK_SIZE, out_dict, out_postings):
+    ''' ==================================================================
+    open up every file
+    opening file DOES NOT loading file contents into memory
+    ================================================================== '''
     
-    # Define constants and variables (in bytes)
-    reset_disk(out_dict, out_postings)  # Reset disk
-    BLOCK_SIZE = 5000000  # Size of a block (main memory)
-    
-    # Calling build_intermediate_files(in_dir, BLOCK_SIZE) will create all the "blocks"
-    BLOCKS_CREATED = build_intermediate_files(in_dir, BLOCK_SIZE)
-    
-    
-    # Now we need to load each block chunk by chunk and do a single pass merge
-    CHUNK_SIZE = BLOCK_SIZE // (
-        BLOCKS_CREATED + 1
-    ) # Get estimated chunk size to load in from each block
-
-
     # Get disk directory to load in blocks
     disk_files = os.listdir(
         os.path.join(os.path.dirname(__file__), "disk")
@@ -239,6 +224,14 @@ def build_index(in_dir, out_dict, out_postings):
 
     # Process every file and deserialize them chunk by chunk
     open_disk_files = []
+    
+    ''' ==================================================================
+    we are doing n-way merging
+    a chunk of data will be read off each intermediate file
+    CHUNK_SIZE is smaller than BLOCK_SIZE by a factor of BLOCK_SIZE / (num_blocks + 1)
+    this is to make space for a holding chunk called writeout_chunk that allows us to perform the merge
+    ================================================================== '''
+    # Holding variable for the data head of every file to be merged
     chunks = [[] for i in range(len(disk_files))]
 
     for disk_file in disk_files:
@@ -285,10 +278,20 @@ def build_index(in_dir, out_dict, out_postings):
     posting_list_to_merge = []
     doc_freq = 0
 
+    ''' ==================================================================
+    merge code
+    once the writeout_chunk is full, we will write it out to make space
+    keep repeating until there are no more words to merge, then break out of while    
+    ================================================================== '''
     # Merge process across all the chunks. Load in more data from specific chunk if it runs out
     while True:
-        # merge the heads where possible
-        # chunk format --- ['zero', ['14313', '14483', '1560', '1640']]
+        ''' ==================================================================
+        we already know that all the blocks in disk have been lexicographically sorted
+        this allows us to merge properly by simply considering the head of every chunk        
+        
+        merge the heads where possible
+        chunk format --- ['zero', ['14313', '14483', '1560', '1640']]
+        ================================================================== '''
         for chunkID, chunk in enumerate(chunks):
             # Load in data from chunk if it's empty and still has data
             if len(chunk) == 0:
@@ -319,6 +322,10 @@ def build_index(in_dir, out_dict, out_postings):
             # get the head and remove from the existing array
             posting_list_to_merge += chunks[chunkID].pop(0)[1]
         
+        ''' ==================================================================
+        we know that disjointed posting lists are sorted, but may contain duplicates
+        we need to remove duplicates and perform sorting on joined posting lists
+        ================================================================== '''        
         # get the unique and sorted posting_list
         posting_list_to_merge = list(set(posting_list_to_merge))
         posting_list_to_merge.sort()
@@ -332,6 +339,10 @@ def build_index(in_dir, out_dict, out_postings):
             posting_list_to_merge[0]
         ) * len(posting_list_to_merge) 
 
+        ''' ==================================================================
+        write out to disk once writeout_chunk is full 
+        once flushed to disk, continue
+        ================================================================== '''       
         # if we exceed our CHUNK_SIZE, it is time to write out the terms merged thus far
         if writeout_memory + writeout_memory_used > CHUNK_SIZE:
             # write out to dictionary.txt and postings.txt
@@ -356,6 +367,36 @@ def build_index(in_dir, out_dict, out_postings):
 
     print("Finished indexing")
 
+
+
+# Main function
+def build_index(in_dir, out_dict, out_postings):
+    """
+    build index from documents stored in the input directory,
+    then output the dictionary file and postings file
+    """
+    print("indexing...\n")
+    # This is an empty method
+    # Pls implement your code in below
+
+    
+    # Define constants and variables (in bytes)
+    reset_disk(out_dict, out_postings)  # Reset disk
+    BLOCK_SIZE = 5000000  # Size of a block (main memory)
+    
+    # Calling build_intermediate_files(in_dir, BLOCK_SIZE) will create all the "blocks"
+    BLOCKS_CREATED = build_intermediate_files(in_dir, BLOCK_SIZE)
+    
+    
+    # Now we need to load each block chunk by chunk and do a single pass merge
+    CHUNK_SIZE = BLOCK_SIZE // (
+        BLOCKS_CREATED + 1
+    ) # Get estimated chunk size to load in from each block
+
+    # call our SPIMI function 
+    spimi(CHUNK_SIZE, out_dict, out_postings)
+
+    
 # Main
 
 input_directory = output_file_dictionary = output_file_postings = None

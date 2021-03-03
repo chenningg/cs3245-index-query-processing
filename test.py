@@ -33,6 +33,8 @@ def write_to_disk():
     dictionary = pickle.load(f_dict)
     print(len(dictionary.keys()))
 
+    print(dictionary["the"])
+
 
 
 
@@ -45,6 +47,8 @@ def write_to_disk():
     while True:
         try:
             postings = pickle.load(f_postings)
+            if count == 1:
+                print(postings)
             count += 1
         except:
             break
