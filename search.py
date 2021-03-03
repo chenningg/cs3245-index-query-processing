@@ -17,7 +17,7 @@ PRECEDENCE = {
 
 }
 
-def parse_query():
+def parse():
     
     parsed_query = ""
     return parsed_query
@@ -32,6 +32,9 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     perform searching on the given queries file and output the results to a file
     """
     print('running search on the queries...')
+    
+    # This is an empty method
+    # Pls implement your code in below
 
     
     ''' ==================================================================
@@ -56,6 +59,31 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     queries = [query.decode() for query in f_queries.read().splitlines()]
 
 
+    ''' ==================================================================
+    for every query, parse it properly
+    then query against the dictionary and posting file
+    posting file will be accessed through pointers only, and never loaded fully into memory
+    append the solution to results (list of lists)
+    ================================================================== ''' 
+    f_postings = open(
+        os.path.join(os.path.dirname(__file__), postings_file), "rb"
+    )    
+    
+    results = []
+
+    for query in queries:
+        # make sure the query is well-formed first
+        parsed_query = parse(query)
+
+        # holding variable for the posting lists that we will get
+        posting_lists = []
+        
+        # query against the dictionary + posting list to get the necessary posting list
+
+
+        # perform the required intersection/merge on posting_lists
+
+
 
     
     ''' ==================================================================
@@ -72,25 +100,22 @@ def run_search(dict_file, postings_file, queries_file, results_file):
         if len(result) == 0:
             f_results.write("\n")    
         else:
-            listToStr = ' '.join([str(doc_id) for doc_id in result])
-            
-            f_results.write(f"{listTo}\n")
-        
-        f_results.write(line)
-        f_results.write("\n")
+            result_string = ' '.join([str(doc_id) for doc_id in result])
+            result_string = result_string.strip()
+            f_results.write(f"{result_string}\n")
     
     f_results.close()
 
-    f_results = open(
-        os.path.join(os.path.dirname(__file__), results_file), 'r'
-    )
+    # # to check the output in code
+    # f_results = open(
+    #     os.path.join(os.path.dirname(__file__), results_file), 'r'
+    # )
 
-    queries = [query for query in f_results.read().splitlines()]
+    # queries = [query for query in f_results.read().splitlines()]
+    # print(queries)
     
 
 
-    # This is an empty method
-    # Pls implement your code in below
 
 dictionary_file = postings_file = file_of_queries = output_file_of_results = None
 
