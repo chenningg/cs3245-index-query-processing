@@ -7,20 +7,14 @@ import os
 import pickle
 
 
-# higher number indicates lower precendence --> i.e. when checking for precedence, we can do
-#       PRECEDENCE["OR"] > PRECEDENCE["()"] --> FALSE, meaning "OR" has lower precendence than ()
-PRECEDENCE = {
-    "()": 4,
-    "NOT": 3,
-    "AND": 2,
-    "OR": 1
-
-}
-
 def parse():
-    
     parsed_query = ""
     return parsed_query
+
+def shunting_yard():
+    operators = ["NOT", "AND", "OR", "ANDNOT"]
+    operator_precedence = {"NOT": 2, "AND": 1, "ANDNOT": 1, "OR": 0}
+
 
 
 def usage():
