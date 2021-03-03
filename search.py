@@ -85,6 +85,7 @@ def run_search(dict_file, postings_file, queries_file, results_file):
 
 
 
+
     
     ''' ==================================================================
     save out to results.txt
@@ -104,6 +105,13 @@ def run_search(dict_file, postings_file, queries_file, results_file):
             result_string = result_string.strip()
             f_results.write(f"{result_string}\n")
     
+
+    ''' ==================================================================
+    close out all files
+    ================================================================== ''' 
+    f_dict.close()
+    f_queries.close()
+    f_postings.close()
     f_results.close()
 
     # # to check the output in code
