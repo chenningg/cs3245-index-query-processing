@@ -64,12 +64,22 @@ def build_intermediate_files(in_dir, BLOCK_SIZE):
 
 
     # Read in documents to index
-    docIDs = os.listdir(in_dir)  # Read in paths of all documents in the in_dir
+    doc_ids = os.listdir(in_dir)  # Read in paths of all documents in the in_dir
+    doc_ids = [int(doc_id) for doc_id in doc_ids]
+    doc_ids.sort()
+
+    # save all the document IDs into its own file for NOT queries in search
+    f_doc_ids = open(
+        os.path.join(os.path.dirname(__file__), "doc_ids"), "wb"
+    )
+    
+    pickle.dump(doc_ids, f_doc_ids)
+
 
 
     # Process every document and create a dictionary of posting lists
-    for docID in docIDs:
-        f = open(os.path.join(in_dir, docID), "r")  # Open the document file
+    for docID in doc_ids:
+        f = open(os.path.join(in_dir, str(docID)), "r")  # Open the document file
         text = f.read()  # Read the document in fulltext
         text = text.lower()  # Convert text to lower case
         sentences = nltk.sent_tokenize(text)  # Tokenize by sentence
@@ -172,7 +182,7 @@ def write_to_disk(writeout_chunk, out_dict, out_postings):
     # open does not mean load into memory 
 
     f_dict = open(
-        os.path.join(os.path.dirname(__file__), out_dict), "r+b" # ---> really r+b for rewriting entire file?
+        os.path.join(os.path.dirname(__file__), out_dict), "r+b"
     )
     
     f_postings = open(

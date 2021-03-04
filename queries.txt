@@ -1,2 +1,7 @@
-bill OR Gates AND (vista OR XP) AND NOT mac
+bill OR Gates AND (vista OR XP) AND NOT mac OR (hello AND world AND cya) NOT goodbye
 happy AND day
+NOT happy AND NOT sad OR cry
+happy and sad NOT (hello AND bye)
+creative OR dumb OR smart
+hello AND goodbye OR (cya
+hello OR NOT goodbye

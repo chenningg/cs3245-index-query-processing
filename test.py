@@ -47,12 +47,15 @@ def write_to_disk():
     while True:
         try:
             postings = pickle.load(f_postings)
-            if count == 1:
+            if count == 3:
+            # if count == 2:
                 print(postings)
             count += 1
         except:
             break
     print(count)
+
+    print(isinstance('^18', str))
 
     
 
