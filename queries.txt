@@ -1,3 +1,4 @@
+NOT (Test OR Hello AND Hey)
 bill OR Gates AND (vista OR XP) AND NOT mac OR (hello AND world AND cya) NOT goodbye
 happy AND day
 NOT happy AND NOT sad OR cry

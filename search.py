@@ -68,7 +68,7 @@ def shunting_yard(query, tokens):
 
         # If token is not an operator nor parenthesis, simply push it to the output queue
         if (token not in OPERATORS) and token != "(" and token != ")":
-            # make the token lower case and stem the token so that it will match the dictionary 
+            # make the token lower case and stem the token so that it will match the dictionary
             output_queue.append(ps.stem(token.lower()))
         # If token is an operator, need to check before pushing to operator stack
         elif token in OPERATORS:
@@ -109,8 +109,8 @@ def shunting_yard(query, tokens):
         while operator_stack:
             # make sure that we do not care about malformed single left bracket queries
             operator = operator_stack.pop()
-            
-            if operator == '(':
+
+            if operator == "(":
                 print("Mismatched parenthesis detected for query '{}'.".format(query))
                 return []
             output_queue.append(operator)
@@ -118,15 +118,15 @@ def shunting_yard(query, tokens):
     return output_queue
 
 
-
-def get_posting_list(term, dictionary, f_postings):
+def get_postings_list(term, dictionary, f_postings):
     try:
-        pointer = dictionary[term]["pointer"] # get pointer value
-        f_postings.seek(pointer, 0) # bring the pointer to the postings_list of term_1
-        results = pickle.load(f_postings)  # read out the associated posting list for term_1
+        pointer = dictionary[term]["pointer"]  # get pointer value
+        f_postings.seek(pointer, 0)  # bring the pointer to the postings_list of term_1
+        # read out the associated posting list for the term
+        postings_list = pickle.load(f_postings)
     except:
-        results = None
-    return results # a postings_list 
+        postings_list = []
+    return postings_list  # a postings_list
 
 
 def skip_pointer_check(value):
@@ -144,7 +144,7 @@ def skip_pointer_check(value):
 #     skip_marker = '^' # the indicator of a skip pointer
 #     curr_index_1 = curr_index_2 = 0 # the index we are on for the respective lists right now
 #     skip_pointer_1 = skip_pointer_2 = 0  # which index should we be skipping to next, if possible
-    
+
 
 #     # while loop ends when we reach the end of both posting lists
 #     while (curr_index_1 != len(postings_list_1) and curr_index_2 != len(postings_list_2)):
@@ -169,22 +169,22 @@ def skip_pointer_check(value):
 #             if mode == "NOT"
 #             merged_list
 
-    
-
-
 
 # handle NOT operator
 # expect input to be postings_list_1 = results, postings_list_2 = all_doc_ids
 # we want the result as [postings_list_2 - postings_list_1]
 def query_not(postings_list_1, postings_list_2):
-    results = [] # holding list for valid doc_ids
-    skip_marker = '^' # the indicator of a skip pointer
-    curr_index_1 = curr_index_2 = 0 # the index we are on for the respective lists right now
-    skip_pointer_1 = skip_pointer_2 = 0  # which index should we be skipping to next, if possible
-    
+    results = []  # holding list for valid doc_ids
+    skip_marker = "^"  # the indicator of a skip pointer
+
+    # the index we are on for the respective lists right now
+    curr_index_1 = curr_index_2 = 0
+
+    # which index should we be skipping to next, if possible
+    skip_pointer_1 = skip_pointer_2 = 0
 
     # while loop ends when we reach the end of both posting lists
-    while (True):
+    while True:
         # terminating conditions
         # as long as postings_list_2 is exhausted, we do not want the rest of postings_list_1
         if curr_index_2 >= len(postings_list_2):
@@ -195,8 +195,7 @@ def query_not(postings_list_1, postings_list_2):
                 if skip_pointer_check(value) == None:
                     results.append(value)
             return results
-        
-        
+
         curr_value_1 = postings_list_1[curr_index_1]
         curr_value_2 = postings_list_2[curr_index_2]
 
@@ -219,7 +218,7 @@ def query_not(postings_list_1, postings_list_2):
             # move up both indexes and do not add anything to results. cannot skip here!
             curr_index_1 += 1
             curr_index_2 += 1
-        
+
         # use the standard process that if curr_value_2 is smaller than that of curr_value_1, we append it and then try to advance curr_value_2
 
         # 1 < 2: we want the value of 2
@@ -228,21 +227,20 @@ def query_not(postings_list_1, postings_list_2):
 
             # move up postings_list_2 value
             # if skip_pointer exists, we check the value to the pointers' right (skip pointers point to other skip pointers)
-            
-            while True:
-                if skip_pointer_2 != None:
+            if skip_pointer_2 != None:
+                # The last skip pointer points to last element in the postings list
+                if skip_pointer_2 == len(postings_list_2) - 1:
+                    skip_value_2 = postings_list_2[skip_pointer_2]
+                # Otherwise, get the value of the posting that the skip pointer points to
+                else:
                     skip_value_2 = postings_list_2[skip_pointer_2 + 1]
 
-                    # append all values prior to the results
-                    if skip_value_2 <= curr_value_1:
-                        results += postings_list_2[curr_index_2+1 : skip_pointer_2]
-                    skip_pointer_2 
+                # [^4, 1, 2, 3, ^7, 9, 10]
+                # append all values prior to the results
+                if skip_value_2 <= curr_value_1:
+                    results += postings_list_2[curr_index_2 + 1 : skip_pointer_2]
 
-                
-
-
-            
-
+                curr_index_2 = skip_pointer_2 + 1
 
     return
 
@@ -258,7 +256,7 @@ def query_or(term_1, term_2):
 
 
 # handle ANDNOT operator
-def query_ANDNOT(term_1, term_2):
+def query_andnot(term_1, term_2):
     return
 
 
@@ -309,7 +307,6 @@ def run_search(dict_file, postings_file, queries_file, results_file):
 
         # ['bill', 'gate', 'vista', 'xp', 'OR', 'AND', 'mac', 'ANDNOT', 'OR', 'hello', 'world', 'AND', 'cya', 'AND', 'goodby', 'NOT', 'OR']
 
-
         # holding variable for the posting lists that we will get
         results = None
         term_stack = []
@@ -325,13 +322,12 @@ def run_search(dict_file, postings_file, queries_file, results_file):
                     # if no results, find postings_list for the term, assign to results, then do a NOT with all_doc_ids
                     if results == None:
                         term_1 = term_stack.pop()
-                        results = get_posting_list(term_1, dictionary, f_postings)
-                        
+                        results = get_postings_list(term_1, dictionary, f_postings)
+
                     # now that results will exist, do a NOT of results with all_doc_ids
                     query_not(results, all_doc_ids)
 
                 # term_stack.pop() if results == None else results
-
 
                 # # binary operators, applies to two terms
                 # elif token == "AND":
