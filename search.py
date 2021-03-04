@@ -23,6 +23,9 @@ def usage():
 
 # Parses a query into proper notation for shunting yard algorithm to process
 def parse(query):
+    if query == "":
+        return []
+    
     # Split by spaces in the query to extract terms
     # Tokens before processing, remove whitespace
     raw_tokens = query.rstrip().split(" ")
@@ -728,6 +731,12 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     for query in queries:
         # make sure the query is well-formed first
         parsed_query = parse(query)
+
+        # empty query
+        if parsed_query == []:
+            results.append([])
+            continue
+
         # print(query, ":", parsed_query)
 
         # holding variable for our stack of terms as we go through them one by one
@@ -807,7 +816,7 @@ def run_search(dict_file, postings_file, queries_file, results_file):
         else:
             result_string = " ".join([str(doc_id) for doc_id in result])
             result_string = result_string.rstrip()
-            # result_string = "queries " + str(i) + " : " + result_string
+            result_string = "queries " + str(i) + " : " + result_string
             f_results.write(result_string + "\n")
 
     """ ==================================================================
