@@ -75,6 +75,7 @@ Tokenizing - https://pythonspot.com/tokenizing-words-and-sentences-with-nltk/
 Stemming - https://www.geeksforgeeks.org/python-stemming-words-with-nltk/
 Shunting yard algorithm - https://en.wikipedia.org/wiki/Shunting-yard_algorithm
 Reverse polish notation - https://en.wikipedia.org/wiki/Reverse_Polish_notation
+Parsing reverse polish notation - https://rosettacode.org/wiki/Parsing/RPN_calculator_algorithm#Python
 CS3245 lecture notes
 NTU CZ4031 notes for block-based approach to file IO
 
