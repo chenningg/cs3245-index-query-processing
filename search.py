@@ -723,7 +723,7 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     for query in queries:
         # make sure the query is well-formed first
         parsed_query = parse(query)
-        # print(query, ":", parsed_query)
+        print(query, ":", parsed_query)
 
         # holding variable for the posting lists that we will get
         intermediate_results = None

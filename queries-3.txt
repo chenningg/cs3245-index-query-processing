@@ -1,0 +1,22 @@
+I AND her
+BAHIA
+BAHIA AND COCOA
+BAHIA OR COCOA
+BAHIA AND COCOA AND SHOWER
+BAHIA AND COCOA AND NOT SHOWER
+NOT BAHIA AND COCOA
+dean OR kenneth OR douglas
+(dean OR kenneth OR douglas) AND BAHIA
+(dean OR kenneth OR douglas) AND dean
+BAHIA AND NOT BAHIA
+grower AND NOT relief
+, AND the AND in AND and AND for AND come
+, AND the AND (in AND and) AND for AND come
+(, AND the) AND (in AND and) AND (for AND come)
+(dean OR kenneth OR douglas) AND (dean OR kenneth OR douglas) AND dean
+(BAHIA OR COCOA) AND (NOT BAHIA AND COCOA)
+(BAHIA OR COCOA) AND (NOT BAHIA AND COCOA) OR BAHIA
+(mere AND dram) OR NOT NOT (dram AND micron) OR NOT NOT (mere AND dram) OR (mere AND dram)
+(, AND the) AND (in AND and) AND NOT NOT (for AND come) AND (in AND and) AND NOT NOT (in AND and)
+NOT NOT BAHIA
+NOT NOT NOT NOT BAHIA
