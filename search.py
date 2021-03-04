@@ -728,38 +728,44 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     for query in queries:
         # make sure the query is well-formed first
         parsed_query = parse(query)
-        print(query, ":", parsed_query)
+        # print(query, ":", parsed_query)
 
         # holding variable for our stack of terms as we go through them one by one
+        # this stack will also hold the results of our operations
         term_stack = []
 
         for token in parsed_query:
-            # add into our term_stack (basically a stack of words that we are checking against the dictionary)
+            # add into our term_stack
             if token not in OPERATORS:
                 term_stack.append(token)
             # detect an operator
             else:
                 # unary operator, applies to one term only
                 if token == "NOT":
-                    # if no results, find postings_list for the term, assign to results, then do a NOT with all_doc_ids
+                    # get last term in term stack
                     term_1 = term_stack.pop()
 
+                    # if the last term is not a list (aka result of previous operators), need to get posting list for this term
                     if not isinstance(term_1, list):
                         term_1 = get_postings_list(term_1, dictionary, f_postings)
 
+                    # handle the not query against all doc ids
                     term_stack.append(query_not(term_1, all_doc_ids))
 
                 # binary operators, applies to two terms
                 else:
+                    # pop last two terms in term_stack for binary operators
                     term_1 = term_stack.pop()
                     term_2 = term_stack.pop()
 
+                    # if either is not a list (aka result from previous operation), get posting list of term
                     if not isinstance(term_1, list):
                         term_1 = get_postings_list(term_1, dictionary, f_postings)
 
                     if not isinstance(term_2, list):
                         term_2 = get_postings_list(term_2, dictionary, f_postings)
 
+                    # do the respective operations on the last two terms in the term stack
                     if token == "AND":
                         term_stack.append(query_and(term_1, term_2))
                     elif token == "OR":
@@ -774,11 +780,14 @@ def run_search(dict_file, postings_file, queries_file, results_file):
             )
             term_stack = ["Error"]
         else:
+            # get last result from term stack
             term_1 = term_stack.pop()
 
+            # if the only term is not a list, means we had a term without operators, get its posting list
             if not isinstance(term_1, list):
                 term_1 = get_postings_list(term_1, dictionary, f_postings)
 
+            # spread all the values of the term nd remove all skip pointers
             for value in term_1:
                 if not isinstance(value, str):
                     term_stack.append(value)
