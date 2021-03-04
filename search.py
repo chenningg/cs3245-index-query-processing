@@ -122,7 +122,7 @@ def shunting_yard(query, tokens):
 
 
 # obtain the postings_list for a specific term from the f_postings file
-# we are using seek, hence we only load the required portion 
+# we are using seek, hence we only load the required portion
 def get_postings_list(term, dictionary, f_postings):
     try:
         pointer = dictionary[term]["pointer"]  # get pointer value
@@ -131,7 +131,7 @@ def get_postings_list(term, dictionary, f_postings):
         postings_list = pickle.load(f_postings)
     except:
         postings_list = []
-    return postings_list  
+    return postings_list
 
 
 # checks if an element in a postings_list is a skip pointer. skip pointers are strings, with a leading ^ symbol
@@ -152,6 +152,8 @@ incoming input: query_not(intermediate_results, all_doc_ids)
 we want the difference between them,
     postings_list_2 - postings_list_1
 ================================================================== """
+
+
 def query_not(postings_list_1, postings_list_2):
     query_results = []  # holding list for valid doc_ids
     skip_marker = "^"  # the indicator of a skip pointer
@@ -202,13 +204,12 @@ def query_not(postings_list_1, postings_list_2):
             curr_index_1 += 1
             curr_index_2 += 1
 
-
             """ ==================================================================
             2 < 1 : smaller comparison 
             we want the values of this if true
             using the process of 
                 curr_value_2 < curr_value_1 --> append and advance curr_value_2
-            ================================================================== """ 
+            ================================================================== """
         elif curr_value_2 < curr_value_1:
             query_results.append(curr_value_2)
 
@@ -234,7 +235,7 @@ def query_not(postings_list_1, postings_list_2):
                     skip_pointer_2 = skip_pointer_check(postings_list_2[skip_pointer_2])
                 else:
                     # failed to skip, continue linearly
-                    curr_index_2 += 1                    
+                    curr_index_2 += 1
             else:
                 # skip pointer invalid, just increment by 1
                 curr_index_2 += 1
@@ -244,7 +245,7 @@ def query_not(postings_list_1, postings_list_2):
             we do not want this
             
             advance the pointer without appending 
-            ================================================================== """ 
+            ================================================================== """
         elif curr_value_2 > curr_value_1:
             # advance curr_index_1 --> check skip pointer first
 
@@ -265,7 +266,7 @@ def query_not(postings_list_1, postings_list_2):
                     skip_pointer_1 = skip_pointer_check(postings_list_1[skip_pointer_1])
                 else:
                     # failed to skip, continue linearly
-                    curr_index_1 += 1                            
+                    curr_index_1 += 1
             else:
                 # skip pointer invalid, just increment by 1
                 curr_index_1 += 1
@@ -281,6 +282,8 @@ incoming input: query_and(intermediate_results, postings_list_term_2)
 we want the intersection between them,
     intersection(posting_list_1, posting_list_2)
 ================================================================== """
+
+
 def query_and(postings_list_1, postings_list_2):
     query_results = []  # holding list for valid doc_ids
     skip_marker = "^"  # the indicator of a skip pointer
@@ -330,13 +333,12 @@ def query_and(postings_list_1, postings_list_2):
             curr_index_1 += 1
             curr_index_2 += 1
 
-
             """ ==================================================================
             2 < 1 : smaller comparison 
             we do not want this if true
             
             advance the pointer without appending 
-            ================================================================== """ 
+            ================================================================== """
         elif curr_value_2 < curr_value_1:
             # advance curr_index_2 --> check skip pointer first
 
@@ -366,7 +368,7 @@ def query_and(postings_list_1, postings_list_2):
             we do not want this
             
             advance the pointer without appending 
-            ================================================================== """ 
+            ================================================================== """
         elif curr_value_2 > curr_value_1:
             # advance curr_index_1 --> check skip pointer first
 
@@ -387,7 +389,7 @@ def query_and(postings_list_1, postings_list_2):
                     skip_pointer_1 = skip_pointer_check(postings_list_1[skip_pointer_1])
                 else:
                     # failed to skip, continue linearly
-                    curr_index_1 += 1                    
+                    curr_index_1 += 1
             else:
                 # skip pointer invalid, just increment by 1
                 curr_index_1 += 1
@@ -403,6 +405,8 @@ incoming input: query_or(intermediate_results, postings_list_term_2)
 we want the union between them,
     union(posting_list_1, posting_list_2)
 ================================================================== """
+
+
 def query_or(postings_list_1, postings_list_2):
     query_results = []  # holding list for valid doc_ids
     skip_marker = "^"  # the indicator of a skip pointer
@@ -421,7 +425,7 @@ def query_or(postings_list_1, postings_list_2):
             for value in postings_list_1[curr_index_1:]:
                 if skip_pointer_check(value) == None:
                     query_results.append(value)
-            return query_results                    
+            return query_results
         # if postings_list_1 is exhausted, the remainder of postings_list_2 will be added into results then returned
         elif curr_index_1 >= len(postings_list_1):
             for value in postings_list_2[curr_index_2:]:
@@ -458,13 +462,12 @@ def query_or(postings_list_1, postings_list_2):
             curr_index_1 += 1
             curr_index_2 += 1
 
-
             """ ==================================================================
             2 < 1 : smaller comparison 
             we want the values of this if true
             using the process of 
                 curr_value_2 < curr_value_1 --> append and advance curr_value_2
-            ================================================================== """ 
+            ================================================================== """
         elif curr_value_2 < curr_value_1:
             query_results.append(curr_value_2)
 
@@ -500,7 +503,7 @@ def query_or(postings_list_1, postings_list_2):
             we want the values of this if true
             using the process of 
                 curr_value_2 > curr_value_1 --> append and advance curr_value_1
-            ================================================================== """ 
+            ================================================================== """
         elif curr_value_2 > curr_value_1:
             query_results.append(curr_value_1)
 
@@ -526,7 +529,7 @@ def query_or(postings_list_1, postings_list_2):
                     skip_pointer_1 = skip_pointer_check(postings_list_1[skip_pointer_1])
                 else:
                     # failed to skip, continue linearly
-                    curr_index_1 += 1                        
+                    curr_index_1 += 1
             else:
                 # skip pointer invalid, just increment by 1
                 curr_index_1 += 1
@@ -560,6 +563,8 @@ example for the ANDNOT concept
     Method 2 is preferable since it saves on a hefty comparison
     Effectively a difference operation of a-b
 ================================================================== """
+
+
 def query_andnot(postings_list_1, postings_list_2):
     query_results = []  # holding list for valid doc_ids
     skip_marker = "^"  # the indicator of a skip pointer
@@ -615,7 +620,7 @@ def query_andnot(postings_list_1, postings_list_2):
             we do not want this
             
             advance the pointer without appending 
-            ================================================================== """ 
+            ================================================================== """
         elif curr_value_2 < curr_value_1:
             # advance curr_index_2 --> check skip pointer first
 
@@ -636,7 +641,7 @@ def query_andnot(postings_list_1, postings_list_2):
                     skip_pointer_2 = skip_pointer_check(postings_list_2[skip_pointer_2])
                 else:
                     # failed to skip, continue linearly
-                    curr_index_2 += 1                    
+                    curr_index_2 += 1
             else:
                 # skip pointer invalid, just increment by 1
                 curr_index_2 += 1
@@ -646,7 +651,7 @@ def query_andnot(postings_list_1, postings_list_2):
             we want the values of this if true
             using the process of 
                 curr_value_2 > curr_value_1 --> append and advance curr_value_1
-            ================================================================== """ 
+            ================================================================== """
         elif curr_value_2 > curr_value_1:
             query_results.append(curr_value_1)
 
@@ -672,7 +677,7 @@ def query_andnot(postings_list_1, postings_list_2):
                     skip_pointer_1 = skip_pointer_check(postings_list_1[skip_pointer_1])
                 else:
                     # failed to skip, continue linearly
-                    curr_index_1 += 1                         
+                    curr_index_1 += 1
             else:
                 # skip pointer invalid, just increment by 1
                 curr_index_1 += 1
@@ -725,9 +730,6 @@ def run_search(dict_file, postings_file, queries_file, results_file):
         parsed_query = parse(query)
         print(query, ":", parsed_query)
 
-        # holding variable for the posting lists that we will get
-        intermediate_results = None
-
         # holding variable for our stack of terms as we go through them one by one
         term_stack = []
 
@@ -740,60 +742,49 @@ def run_search(dict_file, postings_file, queries_file, results_file):
                 # unary operator, applies to one term only
                 if token == "NOT":
                     # if no results, find postings_list for the term, assign to results, then do a NOT with all_doc_ids
-                    if intermediate_results == None:
-                        term_1 = term_stack.pop()
-                        intermediate_results = get_postings_list(
-                            term_1, dictionary, f_postings
-                        )
+                    term_1 = term_stack.pop()
 
-                    # now that results will exist, do a NOT of results with all_doc_ids
-                    intermediate_results = query_not(intermediate_results, all_doc_ids)
+                    if not isinstance(term_1, list):
+                        term_1 = get_postings_list(term_1, dictionary, f_postings)
+
+                    term_stack.append(query_not(term_1, all_doc_ids))
 
                 # binary operators, applies to two terms
                 else:
-                    if intermediate_results == None:
-                        term_1 = term_stack.pop()
-                        intermediate_results = get_postings_list(
-                            term_1, dictionary, f_postings
-                        )
-
+                    term_1 = term_stack.pop()
                     term_2 = term_stack.pop()
-                    postings_list_term_2 = get_postings_list(
-                        term_2, dictionary, f_postings
-                    )
+
+                    if not isinstance(term_1, list):
+                        term_1 = get_postings_list(term_1, dictionary, f_postings)
+
+                    if not isinstance(term_2, list):
+                        term_2 = get_postings_list(term_2, dictionary, f_postings)
 
                     if token == "AND":
-                        # now that results will exist, do a NOT of results with all_doc_ids
-                        intermediate_results = query_and(
-                            intermediate_results, postings_list_term_2
-                        )
+                        term_stack.append(query_and(term_1, term_2))
                     elif token == "OR":
-                        intermediate_results = query_or(
-                            intermediate_results, postings_list_term_2
-                        )
+                        term_stack.append(query_or(term_1, term_2))
                     elif token == "ANDNOT":
-                        intermediate_results = query_andnot(
-                            intermediate_results, postings_list_term_2
-                        )
+                        term_stack.append(query_andnot(term_1, term_2))
 
         # if the query was just a single term without any operators just give back the posting list as the results
         if len(term_stack) > 1:
-            print("ERROR - phrasal queries not supported. Please do not give multiple isolated words without operators separating them")
-            intermediate_results = ["error"]
-        elif len(term_stack) == 1:
+            print(
+                "ERROR - phrasal queries not supported. Please do not give multiple isolated words without operators separating them"
+            )
+            term_stack = ["Error"]
+        else:
             term_1 = term_stack.pop()
-            
-            term_1_postings_list = get_postings_list(
-                term_1, dictionary, f_postings
-            ) 
 
-            intermediate_results = []
-            for value in term_1_postings_list:
+            if not isinstance(term_1, list):
+                term_1 = get_postings_list(term_1, dictionary, f_postings)
+
+            for value in term_1:
                 if not isinstance(value, str):
-                    intermediate_results.append(value)
+                    term_stack.append(value)
 
         # output to final results container
-        results.append(intermediate_results)
+        results.append(term_stack)
 
     """ ==================================================================
     save out to results.txt
@@ -817,7 +808,6 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     f_queries.close()
     f_postings.close()
     f_results.close()
-
 
     # """ ==================================================================
     # check output file
