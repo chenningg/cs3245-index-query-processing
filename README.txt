@@ -37,16 +37,10 @@ However as a summary, we have performed the following tasks
 
 == Files included with this submission ==
 
-disk/			folder containing intermediate outputs during index construction
-disk/block_N		intermediate outputs during index construction
 index.py		implementation of index construction through SPIMI
 search.py		implementation of the boolean retrieval function 
 dictionary.txt		the corpus, obtained from parsing reuters data
 postings.txt		the postings file, pointed to by dictionary entries
-doc_ids			a file contained a list of all document ids, for use in NOT queries
-queries.txt		the input file for boolean retrieval queries
-output.txt		the output file for matching documents for boolean retrieval queries
-CS3245-hw2-check.sh	shell script provided
 README.txt		this file you are reading
 
 == Statement of individual work ==
@@ -59,7 +53,7 @@ expressly vow that we have followed the Facebook rule in discussing
 with others in doing the assignment and did not take notes (digital or
 printed) from the discussions.  
 
-[ ] I/We, A0000000X, did not follow the class rules regarding homework
+[ ] We, A0228402N and A0230521Y did not follow the class rules regarding homework
 assignment, because of the following reason:
 
 We suggest that we should be graded as follows:

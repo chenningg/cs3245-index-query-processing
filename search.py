@@ -9,8 +9,8 @@ import pickle
 ps = nltk.stem.PorterStemmer()
 
 # Store valid operators as well as their precedence level (higher is more precendent)
-OPERATORS = ["NOT", "AND", "OR", "ANDNOT"]
-OPERATOR_PRECEDENCE = {"NOT": 2, "AND": 1, "ANDNOT": 1, "OR": 0}
+OPERATORS = ["NOT", "AND", "OR"]
+OPERATOR_PRECEDENCE = {"NOT": 2, "AND": 1, "OR": 0}
 
 
 def usage():
@@ -55,11 +55,6 @@ def parse(query):
 
 # Shunting yard algorithm to get reverse polish notation of query
 def shunting_yard(query, tokens):
-    # Check if we can combine AND NOT into ANDNOT
-    # This saves time because we just do a check in A and not in B instead of running NOT then AND
-    def is_andnot(token):
-        return tokens and token == "AND" and tokens[0] == "NOT"
-
     # Define output queue and operator stack
     output_queue = []  # The reverse polish notation output
     operator_stack = []
@@ -67,10 +62,6 @@ def shunting_yard(query, tokens):
     # Read in each token
     while tokens:
         token = tokens.pop(0)
-
-        if is_andnot(token):
-            token = "ANDNOT"  # Combine the AND and the NOT into ANDNOT
-            tokens.pop(0)  # Remove the NOT from the tokens list
 
         # If token is not an operator nor parenthesis, simply push it to the output queue
         if (token not in OPERATORS) and token != "(" and token != ")":
@@ -540,153 +531,6 @@ def query_or(postings_list_1, postings_list_2):
     return query_results
 
 
-""" ==================================================================
-handle ANDNOT operator
-incoming input: query_andnot(intermediate_results, postings_list_term_2)
-    intermediate_results --> postings_list_1
-    postings_list_term_2 --> postings_list_2
-
-example for the ANDNOT concept
-    all = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    a = [7, 8, 9, 10]
-    b = [4, 5, 6, 7, 8, 9]
-
-    If the query is -- a AND NOT b
-
-    Method 1. Doing the two NOTS, then the AND
-        a = [7, 8, 9, 10]
-        NOT b = [1, 2, 3, 10] --> expensive to perform NOT operations
-        a AND NOT b = [10]
-
-    Method 2. Doing NOT a, then comparison with b
-        a = [7, 8, 9, 10]
-        b = [4, 5, 6, 7, 8, 9]
-        a ANDNOT b = [10] --> only take things from a that are not in b --> did not compute (NOT b)
-    
-    Method 2 is preferable since it saves on a hefty comparison
-    Effectively a difference operation of a-b
-================================================================== """
-
-
-def query_andnot(postings_list_1, postings_list_2):
-    query_results = []  # holding list for valid doc_ids
-    skip_marker = "^"  # the indicator of a skip pointer
-
-    # the index we are on for the respective lists right now
-    curr_index_1 = curr_index_2 = 0
-
-    # which index should we be skipping to next, if possible
-    skip_pointer_1 = skip_pointer_2 = 0
-
-    # while loop ends when we reach the end of both posting lists
-    while True:
-        # terminating conditions
-        # as long as postings_list_1 is exhausted, we do not want the rest of postings_list_2
-        if curr_index_1 >= len(postings_list_1):
-            return query_results
-        # if postings_list_2 is exhausted, the remainder of postings_list_1 will be added into results then returned
-        elif curr_index_2 >= len(postings_list_2):
-            for value in postings_list_1[curr_index_1:]:
-                if skip_pointer_check(value) == None:
-                    query_results.append(value)
-            return query_results
-
-        curr_value_1 = postings_list_1[curr_index_1]
-        curr_value_2 = postings_list_2[curr_index_2]
-
-        # check if current index position is a skip pointer
-        skip_pointer_1 = skip_pointer_check(curr_value_1)
-        skip_pointer_2 = skip_pointer_check(curr_value_2)
-
-        # if it is indeed a skip pointer, we need to move up one index for actual the current value
-        if skip_pointer_1 != None:
-            curr_index_1 += 1
-            curr_value_1 = postings_list_1[curr_index_1]
-
-        if skip_pointer_2 != None:
-            curr_index_2 += 1
-            curr_value_2 = postings_list_2[curr_index_2]
-
-        # perform a comparison of current_values. output the result to merged_list. then decide if we can actually utilise the skip pointer
-
-        """ ==================================================================
-        1==2 : equality comparison
-        since we want the difference of a-b, we do not want values of equality 
-        ================================================================== """
-        if curr_value_1 == curr_value_2:
-            # move up both indexes and do not add anything to results. cannot skip here!
-            curr_index_1 += 1
-            curr_index_2 += 1
-
-            """ ==================================================================
-            2 < 1 : smaller comparison 
-            we do not want this
-            
-            advance the pointer without appending 
-            ================================================================== """
-        elif curr_value_2 < curr_value_1:
-            # advance curr_index_2 --> check skip pointer first
-
-            # if skip_pointer exists, we check the value to the pointers' right (skip pointers point to other skip pointers)
-            if skip_pointer_2 != None:
-                # The last skip pointer points to last element in the postings list
-                if skip_pointer_2 == len(postings_list_2) - 1:
-                    skip_value_2 = postings_list_2[skip_pointer_2]
-                # Otherwise, get the value of the posting that the skip pointer points to
-                else:
-                    skip_value_2 = postings_list_2[skip_pointer_2 + 1]
-
-                # if the value that the skip_pointer points towards is something still smaller then all intermediate results are safe
-                if skip_value_2 <= curr_value_1:
-
-                    # if we skipped ahead, we need to update our pointers
-                    curr_index_2 = skip_pointer_2 + 1
-                    skip_pointer_2 = skip_pointer_check(postings_list_2[skip_pointer_2])
-                else:
-                    # failed to skip, continue linearly
-                    curr_index_2 += 1
-            else:
-                # skip pointer invalid, just increment by 1
-                curr_index_2 += 1
-
-            """ ==================================================================
-            2 > 1 : greater comparison 
-            we want the values of this if true
-            using the process of 
-                curr_value_2 > curr_value_1 --> append and advance curr_value_1
-            ================================================================== """
-        elif curr_value_2 > curr_value_1:
-            query_results.append(curr_value_1)
-
-            # advance curr_index_1 --> check skip pointer first
-
-            # if skip_pointer exists, we check the value to the pointers' right (skip pointers point to other skip pointers)
-            if skip_pointer_1 != None:
-                # The last skip pointer points to last element in the postings list
-                if skip_pointer_1 == len(postings_list_1) - 1:
-                    skip_value_1 = postings_list_1[skip_pointer_1]
-                # Otherwise, get the value of the posting that the skip pointer points to
-                else:
-                    skip_value_1 = postings_list_1[skip_pointer_1 + 1]
-
-                # if the value that the skip_pointer points towards is something still smaller then all intermediate results are safe
-                if skip_value_1 <= curr_value_2:
-                    # append all values prior to the results
-                    for doc_id in postings_list_1[curr_index_1 + 1 : skip_pointer_1]:
-                        query_results.append(doc_id)
-
-                    # if we skipped ahead, we need to update our pointers
-                    curr_index_1 = skip_pointer_1 + 1
-                    skip_pointer_1 = skip_pointer_check(postings_list_1[skip_pointer_1])
-                else:
-                    # failed to skip, continue linearly
-                    curr_index_1 += 1
-            else:
-                # skip pointer invalid, just increment by 1
-                curr_index_1 += 1
-
-    return query_results
-
 
 def run_search(dict_file, postings_file, queries_file, results_file):
     """
@@ -816,7 +660,7 @@ def run_search(dict_file, postings_file, queries_file, results_file):
         else:
             result_string = " ".join([str(doc_id) for doc_id in result])
             result_string = result_string.rstrip()
-            result_string = "queries " + str(i) + " : " + result_string
+            # result_string = "queries " + str(i) + " : " + result_string
             f_results.write(result_string + "\n")
 
     """ ==================================================================

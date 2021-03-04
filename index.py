@@ -57,6 +57,7 @@ def write_term_postings_dict_to_disk(term_postings_dict, block_num):
                 term_postings, outfile
             )  # Store each <term, postings list> to the disk block
         outfile.close()
+    print(f"intermediate block {block_num} has been written out to disk")
 
 
 # Helps to build up the intermediate files before merging. Returns number of intermediate blocks that have been generated
@@ -395,7 +396,7 @@ def build_index(in_dir, out_dict, out_postings):
 
     # Define constants and variables (in bytes)
     reset_disk(out_dict, out_postings)  # Reset disk
-    BLOCK_SIZE = 5000000  # Size of a block (main memory)
+    BLOCK_SIZE = 2500000  # Size of a block (main memory)
 
     # Calling build_intermediate_files(in_dir, BLOCK_SIZE) will create all the "blocks"
     BLOCKS_CREATED = build_intermediate_files(in_dir, BLOCK_SIZE)
