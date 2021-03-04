@@ -195,6 +195,7 @@ def query_not(postings_list_1, postings_list_2):
                 if skip_pointer_check(value) == None:
                     results.append(value)
             return results
+        print(curr_index_1, curr_index_2)
 
         curr_value_1 = postings_list_1[curr_index_1]
         curr_value_2 = postings_list_2[curr_index_2]
@@ -234,15 +235,40 @@ def query_not(postings_list_1, postings_list_2):
                 # Otherwise, get the value of the posting that the skip pointer points to
                 else:
                     skip_value_2 = postings_list_2[skip_pointer_2 + 1]
-
-                # [^4, 1, 2, 3, ^7, 9, 10]
+                
                 # append all values prior to the results
                 if skip_value_2 <= curr_value_1:
-                    results += postings_list_2[curr_index_2 + 1 : skip_pointer_2]
+                    for doc_id in postings_list_2[curr_index_2 + 1 :skip_pointer_2]:
+                        results.append(doc_id)
+                    
+                    # if we skipped ahead, we need to update our pointers
+                    curr_index_2 = postings_list_2[skip_pointer_2+1]
+                    skip_pointer_2 = skip_pointer_check(postings_list_2[skip_pointer_2])
+            else:
+                curr_index_2 +=1
+        
+        # 1 > 2: we don't want any values
+        elif curr_value_2 > curr_value_1:
+            # move up postings_list_1 value
+            # if skip_pointer exists, we check the value to the pointers' right (skip pointers point to other skip pointers)
+            if skip_pointer_1 != None:
+                # The last skip pointer points to last element in the postings list
+                if skip_pointer_1 == len(postings_list_1) - 1:
+                    skip_value_1 = postings_list_1[skip_pointer_1]
+                # Otherwise, get the value of the posting that the skip pointer points to
+                else:
+                    skip_value_1 = postings_list_1[skip_pointer_1 + 1]
+                
+                # skip ahead prior to the results
+                if skip_value_1 <= curr_value_2:
 
-                curr_index_2 = skip_pointer_2 + 1
-
-    return
+                    # if we skipped ahead, we need to update our pointers
+                    curr_index_1 = postings_list_1[skip_pointer_1+1]
+                    skip_pointer_1 = skip_pointer_check(postings_list_1[skip_pointer_1])
+            else:
+                curr_index_1 +=1        
+    
+    return results
 
 
 # handle AND operator
@@ -304,11 +330,11 @@ def run_search(dict_file, postings_file, queries_file, results_file):
         # make sure the query is well-formed first
         parsed_query = parse(query)
         print(query, ":", parsed_query)
+        intermediate_results = None
 
         # ['bill', 'gate', 'vista', 'xp', 'OR', 'AND', 'mac', 'ANDNOT', 'OR', 'hello', 'world', 'AND', 'cya', 'AND', 'goodby', 'NOT', 'OR']
 
         # holding variable for the posting lists that we will get
-        results = None
         term_stack = []
 
         for token in parsed_query:
@@ -320,13 +346,13 @@ def run_search(dict_file, postings_file, queries_file, results_file):
                 # unary operator, applies to one term only
                 if token == "NOT":
                     # if no results, find postings_list for the term, assign to results, then do a NOT with all_doc_ids
-                    if results == None:
+                    if intermediate_results == None:
                         term_1 = term_stack.pop()
-                        results = get_postings_list(term_1, dictionary, f_postings)
+                        intermediate_results = get_postings_list(term_1, dictionary, f_postings)
 
                     # now that results will exist, do a NOT of results with all_doc_ids
-                    query_not(results, all_doc_ids)
-
+                    intermediate_results = query_not(results, all_doc_ids)
+                    results.append(intermediate_results)
                 # term_stack.pop() if results == None else results
 
                 # # binary operators, applies to two terms
@@ -362,13 +388,14 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     f_postings.close()
     f_results.close()
 
-    # # to check the output in code
-    # f_results = open(
-    #     os.path.join(os.path.dirname(__file__), results_file), 'r'
-    # )
+    # to check the output in code
+    f_results = open(
+        os.path.join(os.path.dirname(__file__), results_file), 'r'
+    )
 
-    # queries = [query for query in f_results.read().splitlines()]
-    # print(queries)
+    results = [result for result in f_results.read().splitlines()]
+    print(results)
+    print(len(results[0]))
 
 
 dictionary_file = postings_file = file_of_queries = output_file_of_results = None
