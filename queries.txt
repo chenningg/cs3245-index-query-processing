@@ -1,4 +1,1 @@
-NOT then 
-NOT then AND hello
-NOT then AND hello OR there
-NOT then AND NOT there
+I AND her

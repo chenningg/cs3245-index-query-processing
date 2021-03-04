@@ -19,7 +19,7 @@ def usage():
     )
 
 
-# Resets the disk folder. Wipes out the intermediate files
+# Resets the disk folder. Wipes out the intermediate files for a fresh installation
 def reset_disk(out_dict, out_postings):
     dir_name = os.path.join(os.path.dirname(__file__), "disk")
 
