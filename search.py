@@ -697,7 +697,7 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     for query in queries:
         # make sure the query is well-formed first
         parsed_query = parse(query)
-        print(query, ":", parsed_query)
+        # print(query, ":", parsed_query)
 
         # holding variable for the posting lists that we will get
         intermediate_results = None
@@ -750,7 +750,23 @@ def run_search(dict_file, postings_file, queries_file, results_file):
                             intermediate_results, postings_list_term_2
                         )
 
-        # perform the required intersection/merge on posting_lists
+        # if the query was just a single term without any operators just give back the posting list as the results
+        if len(term_stack) > 1:
+            print("ERROR - phrasal queries not supported. Please do not give multiple isolated words without operators separating them")
+            intermediate_results = ["error"]
+        elif len(term_stack) == 1:
+            term_1 = term_stack.pop()
+            
+            term_1_postings_list = get_postings_list(
+                term_1, dictionary, f_postings
+            ) 
+
+            intermediate_results = []
+            for value in term_1_postings_list:
+                if not isinstance(value, str):
+                    intermediate_results.append(value)
+
+        # output to final results container
         results.append(intermediate_results)
 
     """ ==================================================================
@@ -759,13 +775,14 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     ================================================================== """
     f_results = open(os.path.join(os.path.dirname(__file__), results_file), "w")
 
-    for result in results:
+    for i, result in enumerate(results):
         if len(result) == 0:
             f_results.write("\n")
         else:
             result_string = " ".join([str(doc_id) for doc_id in result])
-            result_string = result_string.strip()
-            f_results.write(f"{result_string}\n")
+            result_string = result_string.rstrip()
+            result_string = "queries " + str(i) + " : " + result_string
+            f_results.write(result_string + "\n")
 
     """ ==================================================================
     close out all files
@@ -776,17 +793,17 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     f_results.close()
 
 
-    """ ==================================================================
-    check output file
-    ================================================================== """
-    f_results = open(os.path.join(os.path.dirname(__file__), results_file), "r")
+    # """ ==================================================================
+    # check output file
+    # ================================================================== """
+    # f_results = open(os.path.join(os.path.dirname(__file__), results_file), "r")
 
-    results = [result for result in f_results.read().splitlines()]
-    results = [result.split() for result in results]
+    # results = [result for result in f_results.read().splitlines()]
+    # results = [result.split() for result in results]
 
-    for result in results:
-        print(len(result))
-        print(result)
+    # for result in results:
+    #     print(len(result))
+    #     print(result)
 
 
 dictionary_file = postings_file = file_of_queries = output_file_of_results = None

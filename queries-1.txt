@@ -1,0 +1,11 @@
+(come AND dream) OR NOT NOT (test AND and) OR NOT NOT NOT (mine AND data) OR (mere AND dram)
+come AND dream OR NOT NOT test AND and OR NOT NOT NOT mine AND data OR mere AND dram
+(come AND dream) OR NOT NOT (test AND and OR NOT NOT mine) AND data OR mere AND dram
+(come AND dream) OR NOT NOT (test AND and) OR mine AND (data OR mere AND dram)
+(come AND dream OR NOT NOT test AND and) OR NOT (mine AND data) OR (mere AND dram)
+come AND NOT dream AND NOT test AND NOT mine AND NOT data
+come AND NOT (dream AND NOT test AND NOT mine AND NOT data)
+come AND NOT (dream AND NOT test OR NOT mine) AND NOT data
+come AND NOT dream AND NOT test OR NOT mine AND NOT data
+come AND NOT dream AND NOT test OR NOT (mine AND NOT data)
+(come AND NOT dream) AND (NOT test AND NOT mine) OR NOT data
